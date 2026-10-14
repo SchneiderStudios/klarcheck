@@ -80,7 +80,7 @@ const TOOL = {
 
 export class AiError extends Error {
   constructor(public status: number, public type: string) {
-    super(status === 401 ? "AI_AUTH" : status === 402 || type === "billing_error" ? "AI_BILLING" : status === 429 ? "AI_BUSY" : "AI_FAILED");
+    super(status === 401 ? "AI_AUTH" : status === 402 || type.startsWith("billing_error") || /credit balance/i.test(type) ? "AI_BILLING" : status === 429 ? "AI_BUSY" : "AI_FAILED");
   }
 }
 
@@ -143,7 +143,7 @@ export async function askAi(input: AiInput): Promise<AiResult> {
     // Keine Inhalte loggen – nur Status und Fehlertyp.
     const errType = await res
       .json()
-      .then((j: { error?: { type?: string } }) => j.error?.type ?? "")
+      .then((j: { error?: { type?: string; message?: string } }) => `${j.error?.type ?? ""}: ${(j.error?.message ?? "").slice(0, 160)}`)
       .catch(() => "");
     console.error("AI request failed", res.status, errType);
     throw new AiError(res.status, errType);

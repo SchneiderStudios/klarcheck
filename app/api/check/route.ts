@@ -81,7 +81,7 @@ export async function POST(req: Request) {
   } catch (e) {
     const code = e instanceof Error ? e.message : "AI_FAILED";
     const res = err(code === "NO_API_KEY" ? 503 : 502, code);
-    if (e instanceof AiError) res.headers.set("x-ai-status", `${e.status} ${e.type}`.trim());
+    if (e instanceof AiError) res.headers.set("x-ai-status", `${e.status} ${e.type}`.replace(/[^\x20-\x7E]/g, "").trim());
     return res;
   }
 }
