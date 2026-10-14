@@ -78,6 +78,12 @@ const TOOL = {
   },
 };
 
+export class AiError extends Error {
+  constructor(public status: number, public type: string) {
+    super(status === 401 ? "AI_AUTH" : status === 402 || type === "billing_error" ? "AI_BILLING" : status === 429 ? "AI_BUSY" : "AI_FAILED");
+  }
+}
+
 export interface AiInput {
   text?: string; // bereits gekürzt
   file?: { mediaType: string; data: string };
@@ -110,26 +116,37 @@ export async function askAi(input: AiInput): Promise<AiResult> {
       `Schreibe headline, documentType, signals und recommendation auf ${language}. Nutze das Tool "report".`,
   });
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1500,
-      system: SYSTEM,
-      tools: [TOOL],
-      tool_choice: { type: "tool", name: "report" },
-      messages: [{ role: "user", content }],
-    }),
-  });
+  const call = (m: string) =>
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: m,
+        max_tokens: 1500,
+        system: SYSTEM,
+        tools: [TOOL],
+        tool_choice: { type: "tool", name: "report" },
+        messages: [{ role: "user", content }],
+      }),
+    });
+
+  let res = await call(model);
+  if (res.status === 404 && !process.env.ANTHROPIC_MODEL) {
+    // Modellname unbekannt – auf ein älteres, sicher verfügbares Modell ausweichen.
+    res = await call("claude-sonnet-4-5");
+  }
   if (!res.ok) {
-    // Keine Inhalte loggen – nur den Status.
-    console.error("AI request failed", res.status);
-    throw new Error("AI_FAILED");
+    // Keine Inhalte loggen – nur Status und Fehlertyp.
+    const errType = await res
+      .json()
+      .then((j: { error?: { type?: string } }) => j.error?.type ?? "")
+      .catch(() => "");
+    console.error("AI request failed", res.status, errType);
+    throw new AiError(res.status, errType);
   }
   const json = (await res.json()) as { content?: { type: string; input?: AiResult }[] };
   const block = json.content?.find((c) => c.type === "tool_use");

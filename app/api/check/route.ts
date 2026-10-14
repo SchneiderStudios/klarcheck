@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { askAi, LANGUAGES } from "@/lib/ai";
+import { AiError, askAi, LANGUAGES } from "@/lib/ai";
 import { analyzeHosts, analyzeIbans, analyzeText, extractHosts, extractIbans, levelFromSignals, maxLevel, redact, type Signal } from "@/lib/signals";
 
 export const runtime = "nodejs";
@@ -80,6 +80,8 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     const code = e instanceof Error ? e.message : "AI_FAILED";
-    return err(code === "NO_API_KEY" ? 503 : 502, code);
+    const res = err(code === "NO_API_KEY" ? 503 : 502, code);
+    if (e instanceof AiError) res.headers.set("x-ai-status", `${e.status} ${e.type}`.trim());
+    return res;
   }
 }

@@ -30,6 +30,9 @@ const ERRORS: Record<string, string> = {
   EMPTY: "Bitte füge einen Text ein oder lade eine Datei hoch.",
   NO_API_KEY: "Die Prüfung ist gerade nicht eingerichtet. Bitte versuche es später.",
   AI_FAILED: "Die Prüfung hat nicht geklappt. Bitte versuche es noch einmal.",
+  AI_AUTH: "Die Prüfung ist gerade nicht eingerichtet (Schlüssel ungültig). Bitte versuche es später.",
+  AI_BILLING: "Die Prüfung ist gerade nicht verfügbar. Bitte versuche es später.",
+  AI_BUSY: "Gerade sind sehr viele Anfragen unterwegs. Bitte versuche es in einer Minute noch einmal.",
 };
 
 const FALLBACK_HEADLINE: Record<Level, string> = {
