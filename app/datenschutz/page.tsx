@@ -14,7 +14,9 @@ export default function Datenschutz() {
 
         <h2>1. Verantwortlicher</h2>
         <p>
-          <span className="placeholder">[Name, Anschrift, E-Mail – wie im Impressum]</span>
+          Schneider Studios
+          <br />
+          E-Mail: <a href="mailto:herr.ishneider@gmail.com">herr.ishneider@gmail.com</a>
         </p>
 
         <h2>2. Das Wichtigste in Kürze</h2>

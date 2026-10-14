@@ -10,14 +10,13 @@ export default function Impressum() {
       <Header />
       <main className="wrap legal">
         <h1>Impressum</h1>
-        <p className="placeholder">Entwurf: Bitte Platzhalter ausfüllen, bevor die Seite öffentlich beworben wird.</p>
         <h2>Anbieter</h2>
         <p>
-          <span className="placeholder">[Name der Organisation]</span>
+          Schneider Studios
         </p>
         <h2>Kontakt</h2>
         <p>
-          E-Mail: <span className="placeholder">[kontakt@…]</span>
+          E-Mail: <a href="mailto:herr.ishneider@gmail.com">herr.ishneider@gmail.com</a>
         </p>
         <h2>Hinweis zum Angebot</h2>
         <p>
