@@ -61,11 +61,15 @@ export async function POST(req: Request) {
     }
 
     const level = maxLevel(ai.level, levelFromSignals(localSignals));
-    const signals = [
-      ...localSignals.filter((s) => s.severity !== "info"),
-      ...ai.signals.map((s) => ({ ...s, source: "ai" as const })),
-      ...localSignals.filter((s) => s.severity === "info"),
-    ].slice(0, 7);
+    // KI-Signale (in der Zielsprache) zuerst; lokale Warnzeichen nur ergänzen, wenn die KI sie nicht schon nennt.
+    const aiSignals = ai.signals.map((s) => ({ ...s, source: "ai" as const }));
+    const mentioned = (v?: string) => {
+      if (!v) return false;
+      const key = v.replace(/\s+/g, "").toLowerCase();
+      return aiSignals.some((s) => `${s.data ?? ""}${s.label}${s.detail}`.replace(/\s+/g, "").toLowerCase().includes(key));
+    };
+    const missingLocal = localSignals.filter((s) => s.severity !== "info" && !mentioned(s.data));
+    const signals = [...missingLocal, ...aiSignals].slice(0, 7);
 
     return NextResponse.json(
       {
@@ -81,7 +85,7 @@ export async function POST(req: Request) {
   } catch (e) {
     const code = e instanceof Error ? e.message : "AI_FAILED";
     const res = err(code === "NO_API_KEY" ? 503 : 502, code);
-    if (e instanceof AiError) res.headers.set("x-ai-status", `${e.status} ${e.type}`.replace(/[^\x20-\x7E]/g, "").trim());
+    if (e instanceof AiError) res.headers.set("x-ai-status", `${e.status} ${e.type.split(":")[0]}`.replace(/[^\x20-\x7E]/g, "").trim());
     return res;
   }
 }

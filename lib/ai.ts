@@ -13,7 +13,7 @@ export interface AiResult {
   level: Level;
   headline: string;
   documentType: string;
-  signals: { severity: "info" | "caution" | "danger"; label: string; detail: string }[];
+  signals: { severity: "info" | "caution" | "danger"; label: string; detail: string; data?: string }[];
   recommendation: string;
   extracted: { ibans: string[]; urls: string[] };
 }
@@ -60,6 +60,7 @@ const TOOL = {
             severity: { type: "string", enum: ["info", "caution", "danger"] },
             label: { type: "string" },
             detail: { type: "string" },
+            data: { type: "string", description: "Optional: der betroffene Wert, z. B. Domain oder IBAN, unverändert." },
           },
           required: ["severity", "label", "detail"],
         },
@@ -112,7 +113,7 @@ export async function askAi(input: AiInput): Promise<AiResult> {
     type: "text",
     text:
       (input.text ? `<inhalt>\n${input.text}\n</inhalt>\n\n` : "Der zu prüfende Inhalt ist das angehängte Bild/PDF.\n\n") +
-      `Ergebnisse unserer automatischen Prüfung (bereits geprüft, nicht wiederholen, aber in die Gesamteinschätzung einbeziehen):\n${local}\n\n` +
+      `Ergebnisse unserer automatischen Prüfung (zuverlässig). Übernimm jedes Warnzeichen davon als eigenes Signal in der Zielsprache, mit dem Wert in "data", und beziehe sie in die Gesamteinschätzung ein:\n${local}\n\n` +
       `Schreibe headline, documentType, signals und recommendation auf ${language}. Antworte ausschließlich, indem du das Tool "report" aufrufst.`,
   });
 

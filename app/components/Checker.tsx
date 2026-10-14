@@ -30,6 +30,7 @@ const ERRORS: Record<string, string> = {
   EMPTY: "Bitte füge einen Text ein oder lade eine Datei hoch.",
   NO_API_KEY: "Die Prüfung ist gerade nicht eingerichtet. Bitte versuche es später.",
   AI_FAILED: "Die Prüfung hat nicht geklappt. Bitte versuche es noch einmal.",
+  IMAGE_DECODE: "Dieses Foto kann der Browser nicht öffnen (z. B. HEIC-Format vom iPhone). Bitte mach einen Screenshot davon oder speichere es als JPG.",
   AI_AUTH: "Die Prüfung ist gerade nicht eingerichtet (Schlüssel ungültig). Bitte versuche es später.",
   AI_BILLING: "Die Prüfung ist gerade nicht verfügbar. Bitte versuche es später.",
   AI_BUSY: "Gerade sind sehr viele Anfragen unterwegs. Bitte versuche es in einer Minute noch einmal.",
@@ -53,7 +54,7 @@ async function imageToJpegBase64(file: File): Promise<string> {
       i.onerror = () => reject(new Error("decode"));
       i.src = url;
     });
-    const max = 1800;
+    const max = 1600;
     const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.naturalWidth * scale);
@@ -63,7 +64,7 @@ async function imageToJpegBase64(file: File): Promise<string> {
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+    return canvas.toDataURL("image/jpeg", 0.82).split(",")[1];
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -139,10 +140,18 @@ export default function Checker() {
       if (mode === "text") {
         payload.text = text;
       } else if (file) {
-        payload.file =
-          file.type === "application/pdf"
-            ? { mediaType: "application/pdf", data: await fileToBase64(file) }
-            : { mediaType: "image/jpeg", data: await imageToJpegBase64(file) };
+        if (file.type === "application/pdf") {
+          payload.file = { mediaType: "application/pdf", data: await fileToBase64(file) };
+        } else {
+          try {
+            payload.file = { mediaType: "image/jpeg", data: await imageToJpegBase64(file) };
+          } catch {
+            // Bild kann im Browser nicht gelesen werden (z. B. HEIC vom iPhone am Computer)
+            setError(ERRORS.IMAGE_DECODE);
+            setLoading(false);
+            return;
+          }
+        }
       }
       const res = await fetch("/api/check", {
         method: "POST",
@@ -151,7 +160,8 @@ export default function Checker() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(ERRORS[json.error as string] ?? ERRORS.AI_FAILED);
+        const code = res.status === 413 ? "FILE_TOO_LARGE" : (json.error as string);
+        setError(ERRORS[code] ?? ERRORS.AI_FAILED);
       } else {
         setResult(json as Result);
         // Inhalte sofort aus dem Browser-Speicher entfernen
@@ -310,6 +320,17 @@ export default function Checker() {
       </label>
 
       {error && <p className="error" role="alert">{error}</p>}
+      {!loading && !canSubmit && (
+        <p className="small muted" style={{ textAlign: "center" }}>
+          {mode === "text" && text.trim().length < 10
+            ? "Füge zuerst die Nachricht ein."
+            : mode === "file" && !file
+              ? "Wähle zuerst ein Foto oder PDF."
+              : !consent
+                ? "Bitte bestätige oben den Hinweis mit dem Häkchen."
+                : ""}
+        </p>
+      )}
 
       <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
         <Shield size={22} /> {loading ? "Wird geprüft …" : "Jetzt kostenlos prüfen"}
