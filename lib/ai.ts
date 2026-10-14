@@ -113,7 +113,7 @@ export async function askAi(input: AiInput): Promise<AiResult> {
     text:
       (input.text ? `<inhalt>\n${input.text}\n</inhalt>\n\n` : "Der zu prüfende Inhalt ist das angehängte Bild/PDF.\n\n") +
       `Ergebnisse unserer automatischen Prüfung (bereits geprüft, nicht wiederholen, aber in die Gesamteinschätzung einbeziehen):\n${local}\n\n` +
-      `Schreibe headline, documentType, signals und recommendation auf ${language}. Nutze das Tool "report".`,
+      `Schreibe headline, documentType, signals und recommendation auf ${language}. Antworte ausschließlich, indem du das Tool "report" aufrufst.`,
   });
 
   const call = (m: string) =>
@@ -129,7 +129,7 @@ export async function askAi(input: AiInput): Promise<AiResult> {
         max_tokens: 1500,
         system: SYSTEM,
         tools: [TOOL],
-        tool_choice: { type: "tool", name: "report" },
+        tool_choice: { type: "auto" },
         messages: [{ role: "user", content }],
       }),
     });
@@ -148,10 +148,19 @@ export async function askAi(input: AiInput): Promise<AiResult> {
     console.error("AI request failed", res.status, errType);
     throw new AiError(res.status, errType);
   }
-  const json = (await res.json()) as { content?: { type: string; input?: AiResult }[] };
-  const block = json.content?.find((c) => c.type === "tool_use");
-  if (!block?.input) throw new Error("AI_FAILED");
-  const r = block.input;
+  const json = (await res.json()) as { content?: { type: string; input?: AiResult; text?: string }[] };
+  let r = json.content?.find((c) => c.type === "tool_use")?.input;
+  if (!r) {
+    // Falls das Modell als Text statt über das Tool antwortet: JSON aus dem Text lesen.
+    const txt = json.content?.filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n") ?? "";
+    const m = txt.match(/\{[\s\S]*\}/);
+    try {
+      r = m ? (JSON.parse(m[0]) as AiResult) : undefined;
+    } catch {
+      r = undefined;
+    }
+  }
+  if (!r) throw new Error("AI_FAILED");
   return {
     level: ["safe", "caution", "danger"].includes(r.level) ? r.level : "caution",
     headline: String(r.headline ?? ""),
