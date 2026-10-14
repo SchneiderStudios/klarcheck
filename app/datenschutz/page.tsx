@@ -37,7 +37,7 @@ export default function Datenschutz() {
 
         <h2>4. KI-Dienstleister</h2>
         <p>
-          Für die Analyse nutzen wir die API von Anthropic PBC, 548 Market Street, San Francisco, CA 94104, USA. Dabei kann es zu einer Übermittlung in die USA kommen. Mit Anthropic besteht ein Auftragsverarbeitungsvertrag (Data Processing Addendum als Teil der Commercial Terms); die Übermittlung erfolgt auf Grundlage der EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO). Anthropic verwendet Daten aus der API nach eigenen Angaben nicht zum Training seiner Modelle.
+          Für die Analyse nutzen wir die API von Anthropic PBC, 548 Market Street, San Francisco, CA 94104, USA. Dabei kann es zu einer Übermittlung in die USA kommen. Mit Anthropic besteht ein Auftragsverarbeitungsvertrag (Data Processing Addendum als Teil der Commercial Terms); die Übermittlung erfolgt auf Grundlage der EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO).
         </p>
 
         <h2>5. Hosting</h2>
