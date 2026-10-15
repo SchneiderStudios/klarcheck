@@ -1,13 +1,17 @@
-export default function Footer() {
+import { DICTS, type Locale } from "@/lib/i18n";
+
+export default function Footer({ locale = "de" }: { locale?: Locale }) {
+  const t = DICTS[locale].footer;
   return (
     <footer className="footer">
       <div className="wrap">
         <span className="small muted" style={{ flex: "1 1 320px" }}>
-          Klarcheck · Orientierungshilfe mit KI. Ergebnisse sind unverbindliche Empfehlungen, keine Rechtsberatung und keine Garantie für Echtheit. Bei Zweifeln wende dich an die zuständige Stelle.
+          {t.text}
+          {t.legalNote && <> {t.legalNote}</>}
         </span>
-        <nav aria-label="Rechtliches">
-          <a href="/impressum">Impressum</a>
-          <a href="/datenschutz">Datenschutz</a>
+        <nav aria-label="Legal">
+          <a href="/impressum">{t.imprint}</a>
+          <a href="/datenschutz">{t.privacy}</a>
         </nav>
       </div>
     </footer>

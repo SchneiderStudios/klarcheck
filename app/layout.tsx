@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-mono/500.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://klarcheck.vercel.app"),
   title: "Klarcheck – Echt oder Masche? Kostenlos prüfen",
   description:
     "Brief, Rechnung, SMS oder E-Mail verdächtig? Klarcheck zeigt in Sekunden typische Betrugsmerkmale – kostenlos, ohne Konto, in deiner Sprache.",

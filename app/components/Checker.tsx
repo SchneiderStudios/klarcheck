@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { Dict, Locale } from "@/lib/i18n";
 import { Arrow, Camera, CheckCircle, FileText, Info, Message, Octagon, Shield, Triangle, Upload, Lock } from "./icons";
 
 type Level = "safe" | "caution" | "danger";
@@ -22,25 +23,6 @@ const LANGS: [string, string][] = [
   ["tr", "Türkçe"],
   ["ar", "العربية"],
 ];
-
-const ERRORS: Record<string, string> = {
-  RATE_LIMIT: "Zu viele Prüfungen in kurzer Zeit. Bitte warte eine Minute.",
-  FILE_TOO_LARGE: "Die Datei ist zu groß. Bitte ein kleineres Foto oder ein PDF unter 3 MB wählen.",
-  BAD_FILE_TYPE: "Dieses Format wird nicht unterstützt. Bitte JPG, PNG oder PDF verwenden.",
-  EMPTY: "Bitte füge einen Text ein oder lade eine Datei hoch.",
-  NO_API_KEY: "Die Prüfung ist gerade nicht eingerichtet. Bitte versuche es später.",
-  AI_FAILED: "Die Prüfung hat nicht geklappt. Bitte versuche es noch einmal.",
-  IMAGE_DECODE: "Dieses Foto kann der Browser nicht öffnen (z. B. HEIC-Format vom iPhone). Bitte mach einen Screenshot davon oder speichere es als JPG.",
-  AI_AUTH: "Die Prüfung ist gerade nicht eingerichtet (Schlüssel ungültig). Bitte versuche es später.",
-  AI_BILLING: "Die Prüfung ist gerade nicht verfügbar. Bitte versuche es später.",
-  AI_BUSY: "Gerade sind sehr viele Anfragen unterwegs. Bitte versuche es in einer Minute noch einmal.",
-};
-
-const FALLBACK_HEADLINE: Record<Level, string> = {
-  safe: "Keine Auffälligkeiten gefunden",
-  caution: "Vorsicht – Warnzeichen gefunden",
-  danger: "Hohes Risiko – deutliche Warnzeichen",
-};
 
 const DEASY_URL = process.env.NEXT_PUBLIC_DEASY_URL || "#deasy";
 const MAX_PDF_BYTES = 3 * 1024 * 1024;
@@ -86,12 +68,13 @@ function LevelIcon({ level, size = 36 }: { level: Severity | Level; size?: numbe
   return <CheckCircle size={size} className="safe-ink" />;
 }
 
-export default function Checker() {
+export default function Checker({ t, locale }: { t: Dict["checker"]; locale: Locale }) {
+  const ERRORS = t.errors;
   const [mode, setMode] = useState<"text" | "file">("text");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [lang, setLang] = useState("de");
+  const [lang, setLang] = useState<string>(locale);
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +162,7 @@ export default function Checker() {
   }
 
   if (result) {
-    const headline = result.escalated || !result.headline ? FALLBACK_HEADLINE[result.level] : result.headline;
+    const headline = result.escalated || !result.headline ? t.fallback[result.level] : result.headline;
     return (
       <div className="card checker" ref={resultRef}>
         <div className="result" role="status" aria-live="polite">
@@ -203,25 +186,25 @@ export default function Checker() {
             ))}
             {result.recommendation && (
               <div className="reco">
-                <strong>Unsere Empfehlung</strong>
+                <strong>{t.recommendation}</strong>
                 <span>{result.recommendation}</span>
               </div>
             )}
             {result.level === "safe" && (
               <a className="btn btn-small" href={DEASY_URL}>
-                Was steht im Brief? Mit DEASY verstehen <Arrow size={18} />
+                {t.deasyCta} <Arrow size={18} />
               </a>
             )}
           </div>
           <div className="disclaimer">
             <Shield size={16} />
             <span>
-              Nur eine Empfehlung der KI. Keine Rechtsberatung, keine Garantie für Echtheit. Bei Zweifeln: zuständige Stelle fragen. <a href="#hinweis">Mehr dazu</a>
+              {t.disclaimer} <a href="#hinweis">{t.disclaimerLink}</a>
             </span>
           </div>
         </div>
         <button type="button" className="btn btn-block" onClick={reset}>
-          Weitere Nachricht prüfen
+          {t.again}
         </button>
       </div>
     );
@@ -229,33 +212,33 @@ export default function Checker() {
 
   return (
     <form className="card checker" onSubmit={submit} aria-busy={loading}>
-      <div className="tabs" role="tablist" aria-label="Was möchtest du prüfen?">
+      <div className="tabs" role="tablist" aria-label={t.tablistLabel}>
         <button type="button" role="tab" className="tab" aria-selected={mode === "text"} onClick={() => setMode("text")}>
-          <Message size={18} /> SMS / E-Mail
+          <Message size={18} /> {t.tabText}
         </button>
         <button type="button" role="tab" className="tab" aria-selected={mode === "file"} onClick={() => setMode("file")}>
-          <FileText size={18} /> Brief / Foto
+          <FileText size={18} /> {t.tabFile}
         </button>
       </div>
 
       {loading ? (
-        <div className="scanning" aria-label="Prüfung läuft">
+        <div className="scanning" aria-label={t.submitting}>
           <div className="bar" style={{ width: "40%" }} />
           <div className="bar" style={{ width: "88%" }} />
           <div className="bar" style={{ width: "72%" }} />
           <div className="bar" style={{ width: "92%" }} />
           <div className="bar" style={{ width: "56%" }} />
           <div className="beam" />
-          <p className="small muted pulse" style={{ marginTop: 8 }}>Prüfe Text, Links, Bankverbindung und Absender …</p>
+          <p className="small muted pulse" style={{ marginTop: 8 }}>{t.scanning}</p>
         </div>
       ) : mode === "text" ? (
         <>
-          <label className="field-label" htmlFor="kc-text">Nachricht einfügen</label>
+          <label className="field-label" htmlFor="kc-text">{t.textLabel}</label>
           <textarea
             id="kc-text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={"z. B.: Ihr Paket konnte nicht zugestellt werden. Bitte bestätigen Sie Ihre Adresse: https://…"}
+            placeholder={t.textPlaceholder}
             maxLength={8000}
           />
         </>
@@ -275,13 +258,13 @@ export default function Checker() {
             }}
           >
             <span className="drop-icon"><FileText size={26} /></span>
-            <span style={{ fontWeight: 600 }}>Foto, Screenshot oder PDF</span>
+            <span style={{ fontWeight: 600 }}>{t.fileTitle}</span>
             <div className="drop-buttons">
               <button type="button" className="btn btn-small" onClick={() => cameraInput.current?.click()}>
-                <Camera size={18} /> Foto aufnehmen
+                <Camera size={18} /> {t.takePhoto}
               </button>
               <button type="button" className="btn btn-small" onClick={() => fileInput.current?.click()}>
-                <Upload size={18} /> Datei wählen
+                <Upload size={18} /> {t.chooseFile}
               </button>
             </div>
             <input ref={cameraInput} className="sr-only" type="file" accept="image/*" capture="environment" tabIndex={-1} onChange={(e) => pickFile(e.target.files?.[0])} />
@@ -292,19 +275,19 @@ export default function Checker() {
               {preview ? <img src={preview} alt="" /> : <FileText size={28} />}
               <span className="name">{file.name}</span>
               <button type="button" className="link-btn" onClick={() => { setFile(null); if (preview) URL.revokeObjectURL(preview); setPreview(null); }}>
-                Entfernen
+                {t.remove}
               </button>
             </div>
           )}
           <p className="hint">
             <Lock size={16} />
-            <span>Tipp: Deinen Namen, deine Adresse und Kundennummern kannst du vorher abdecken – für die Prüfung braucht es sie nicht.</span>
+            <span>{t.photoTip}</span>
           </p>
         </>
       )}
 
       <div className="row">
-        <label className="small muted" htmlFor="kc-lang">Ergebnis auf</label>
+        <label className="small muted" htmlFor="kc-lang">{t.resultIn}</label>
         <select id="kc-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
           {LANGS.map(([code, name]) => (
             <option key={code} value={code}>{name}</option>
@@ -315,7 +298,7 @@ export default function Checker() {
       <label className="consent">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>
-          Ich verstehe: Klarcheck gibt nur eine Empfehlung, keine Rechtsberatung und keine Garantie. Ich habe die <a href="/datenschutz">Datenschutzhinweise</a> gelesen.
+          {t.consent} <a href="/datenschutz">{t.consentLink}</a>.
         </span>
       </label>
 
@@ -323,17 +306,17 @@ export default function Checker() {
       {!loading && !canSubmit && (
         <p className="small muted" style={{ textAlign: "center" }}>
           {mode === "text" && text.trim().length < 10
-            ? "Füge zuerst die Nachricht ein."
+            ? t.needText
             : mode === "file" && !file
-              ? "Wähle zuerst ein Foto oder PDF."
+              ? t.needFile
               : !consent
-                ? "Bitte bestätige oben den Hinweis mit dem Häkchen."
+                ? t.needConsent
                 : ""}
         </p>
       )}
 
       <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-        <Shield size={22} /> {loading ? "Wird geprüft …" : "Jetzt kostenlos prüfen"}
+        <Shield size={22} /> {loading ? t.submitting : t.submit}
       </button>
     </form>
   );
